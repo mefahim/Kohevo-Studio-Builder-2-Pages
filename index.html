@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#090a10" />
+  <title>Kohevo Studio — Builder 2.0</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-lockup"><button class="icon-btn quiet" aria-label="Open workspace menu">☰</button><div class="brand-mark">K</div><div><div class="brand-name">KOHEVO <span>STUDIO</span></div><div class="brand-sub">BUILDER <b>2.0</b></div></div></div>
+      <div class="top-center"><button class="back-btn" aria-label="Back">←</button><div class="page-meta"><span class="page-label">Home page</span><span class="saved-dot"></span><span class="saved-label">Saved just now</span></div></div>
+      <div class="top-actions"><button class="icon-btn" title="Undo">↶</button><button class="icon-btn muted" title="Redo">↷</button><span class="top-divider"></span><button class="device-top active" data-device="desktop">▣</button><button class="device-top" data-device="tablet">▤</button><button class="device-top" data-device="mobile">▯</button><button class="preview-btn">◉ <span>Preview</span></button><button class="publish-btn">Publish <span>⌄</span></button><button class="avatar">MF</button></div>
+    </header>
+
+    <main class="workspace">
+      <aside class="left-panel">
+        <div class="panel-heading"><span>Add</span><button class="close-panel" aria-label="Collapse panel">‹</button></div>
+        <div class="search-box"><span>⌕</span><input placeholder="Search elements" aria-label="Search elements" /><kbd>⌘ K</kbd></div>
+        <nav class="add-tabs" aria-label="Add categories"><button class="add-tab active">Elements</button><button class="add-tab">Sections</button><button class="add-tab">Components</button></nav>
+        <div class="category-list">
+          <section class="palette-section"><div class="section-title">LAYOUT <span>⌄</span></div><div class="palette-grid"><button class="palette-item"><i>▦</i><span>Container</span></button><button class="palette-item"><i>▥</i><span>Grid</span></button><button class="palette-item"><i>↔</i><span>Flex row</span></button><button class="palette-item"><i>☷</i><span>Stack</span></button></div></section>
+          <section class="palette-section"><div class="section-title">BASIC <span>⌃</span></div><div class="palette-grid"><button class="palette-item"><i>T</i><span>Text</span></button><button class="palette-item"><i>▣</i><span>Image</span></button><button class="palette-item"><i>↗</i><span>Button</span></button><button class="palette-item"><i>—</i><span>Divider</span></button></div></section>
+          <section class="palette-section"><div class="section-title">CONTENT <span>⌃</span></div><div class="palette-grid"><button class="palette-item"><i>▤</i><span>Rich text</span></button><button class="palette-item"><i>◉</i><span>Video</span></button><button class="palette-item"><i>⌁</i><span>Form</span></button><button class="palette-item"><i>⋯</i><span>More</span></button></div></section>
+        </div>
+        <div class="left-footer"><button class="utility-link">✦ <span>AI assistant</span><em>New</em></button><button class="utility-link">◈ <span>Templates</span><small>›</small></button><button class="utility-link">▧ <span>Media library</span><small>›</small></button></div>
+      </aside>
+
+      <section class="canvas-stage">
+        <div class="canvas-toolbar"><div class="breadcrumbs"><span>Home</span><b>/</b><span>Hero section</span></div><div class="canvas-tools"><button class="canvas-tool" title="Select">↖</button><button class="canvas-tool" title="Show grid">⌗</button><button class="canvas-tool" title="Comments">◌<sup>2</sup></button></div></div>
+        <div class="stage-scroll"><div class="site-canvas device-desktop" id="siteCanvas">
+          <div class="site-nav"><div class="site-logo">north<span>star</span></div><div class="site-links"><a>Work</a><a>Studio</a><a>Journal</a><a>Contact</a></div><button class="nav-menu">Menu <span>↗</span></button></div>
+          <div class="hero-section selected" id="heroSection" tabindex="0" aria-label="Hero section selected"><div class="hero-image"></div><div class="hero-overlay"></div><div class="hero-content"><div class="eyebrow">Independent creative studio <span>✦</span></div><h1>Make space<br /><i>for wonder.</i></h1><p>Northstar is a creative studio for people building a more considered future.</p><button class="hero-cta">Explore our work <span>↗</span></button></div><div class="hero-bottom"><span>01 — 04</span><span>Scroll to explore <b>↓</b></span></div><div class="selection-label">Hero section <span>⌘ ↵</span></div><div class="context-toolbar"><button title="Move">✥</button><button title="Duplicate" data-action="duplicate">⧉</button><button title="Edit">✎</button><span></span><button title="Delete" class="danger" data-action="delete">⌫</button></div></div>
+          <div class="site-strip"><span>Selected work</span><span>View all projects ↗</span></div><div class="mock-work"><div><span>01 / 03</span><strong>Forma House</strong></div><div><span>02 / 03</span><strong>A quiet kind of bold</strong></div></div>
+        </div></div>
+        <div class="insertion-line"><span>+</span> Drop section here</div>
+        <footer class="bottom-bar"><div class="navigator"><button class="navigator-toggle">☷ <span>Navigator</span></button><span class="bottom-divider"></span><span class="crumb-muted">Home</span><b>/</b><span class="crumb-current">Hero section</span></div><div class="zoom-controls"><button data-zoom="out">−</button><span id="zoomValue">100%</span><button data-zoom="in">+</button><button class="fit-btn" data-zoom="fit">Fit</button><span class="bottom-divider"></span><button title="Fullscreen">⛶</button></div></footer>
+      </section>
+
+      <aside class="inspector"><div class="inspector-head"><div><span class="kicker">SELECTED</span><h2>Hero section</h2></div><button class="icon-btn quiet">⋯</button></div><div class="inspector-tabs"><button class="inspector-tab active" data-tab="style">Style</button><button class="inspector-tab" data-tab="content">Content</button><button class="inspector-tab" data-tab="advanced">Advanced</button></div><div class="inspector-scroll" id="inspectorContent">
+        <div class="inspector-group open"><button class="group-title">Background <span>⌃</span></button><div class="group-body"><div class="segmented"><button class="bg-type active" data-bg="image">Image</button><button class="bg-type" data-bg="color">Color</button><button class="bg-type" data-bg="gradient">Gradient</button><button class="bg-type" data-bg="video">Video</button></div><div class="media-card"><div class="media-thumb"></div><div><strong>northstar-hero.jpg</strong><small>1920 × 1280 · JPG</small></div><button class="media-more">⋯</button></div><div class="button-row"><button class="outline-btn">Change image</button><button class="outline-btn icon-only" title="Remove image">⌫</button></div><div class="control-row"><label>Fit</label><select id="fitControl"><option>Cover</option><option>Contain</option><option>Fill</option></select></div><div class="control-row"><label>Position</label><select id="positionControl"><option>Center center</option><option>Center top</option><option>Left center</option><option>Right center</option></select></div><div class="control-row focal-row"><label>Focal point</label><div class="focal-picker" id="focalPicker"><span id="focalDot"></span><i></i></div></div><div class="control-row"><label>Overlay</label><button class="toggle active" id="overlayToggle"><span></span></button></div><div class="control-row"><label>Overlay color</label><button class="color-control"><span class="color-swatch"></span>#08090D <b>⌄</b></button></div><div class="control-row"><label>Opacity</label><div class="range-wrap"><input type="range" id="overlayOpacity" min="0" max="100" value="52" /><output id="opacityValue">52%</output></div></div></div></div>
+        <div class="inspector-group open"><button class="group-title">Layout <span>⌃</span></button><div class="group-body"><div class="two-controls"><div><label>Min height</label><div class="input-unit"><input id="heightControl" type="number" value="720" /><span>px</span></div></div><div><label>Content width</label><div class="input-unit"><input type="number" value="1180" /><span>px</span></div></div></div><div class="align-control"><button>≡</button><button class="active">≣</button><button>≡</button><button>↕</button><button>↕</button></div></div></div>
+        <div class="inspector-group"><button class="group-title">Typography <span>›</span></button></div><div class="inspector-group"><button class="group-title">Spacing <span>›</span></button></div><div class="inspector-group"><button class="group-title">Border & radius <span>›</span></button></div><div class="inspector-group"><button class="group-title">Shadow <span>›</span></button></div><div class="inspector-group"><button class="group-title">Responsive <span>›</span></button></div><div class="inspector-group"><button class="group-title">Interactions <span>›</span></button></div>
+      </div><div class="inspector-footer"><button class="reset-btn">↶ Reset changes</button><span>⌘ S</span></div></aside>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
