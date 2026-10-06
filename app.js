@@ -1,322 +1,67 @@
-const $ = (s, root = document) => root.querySelector(s);
-const $$ = (s, root = document) => [...root.querySelectorAll(s)];
-
-const canvas = $('#siteCanvas');
-const hero = $('#heroSection');
-const toast = $('#toast');
-const appShell = $('.app-shell');
-const inspectorContent = $('#inspectorContent');
-const inspectorTitle = $('.inspector h2');
-const savedLabel = $('.saved-label');
-const heroOverlay = $('.hero-overlay');
-const heroImage = $('.hero-image');
-let toastTimer;
-let zoom = 100;
-let activeTab = 'style';
-let mobileDrawer = null;
-const history = [];
-const future = [];
-const state = {
-  device: 'desktop',
-  selected: 'hero',
-  overlay: true,
-  overlayOpacity: 52,
-  fit: 'cover',
-  position: 'center center',
-  focal: { x: 50, y: 50 },
-  height: 720,
-  grid: false,
-  comments: false,
-  added: [],
-};
-
-function notify(message) {
-  toast.textContent = message;
-  toast.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const canvas=$('#siteCanvas'),hero=$('#heroSection'),toast=$('#toast'),appShell=$('.app-shell'),inspectorContent=$('#inspectorContent'),inspectorTitle=$('.inspector h2');
+let timer,zoom=100,activeTab='style',mobileDrawer=null;
+const history=[],future=[];
+const defaults={device:'desktop',selected:'hero',grid:false,comments:false,overlay:true,overlayOpacity:52,fit:'cover',position:'center center',focal:{x:50,y:50},height:720,content:{headline:'Make space\nfor wonder.',copy:'Northstar is a creative studio for people building a more considered future.',cta:'Explore our work',alt:'Warm sunset over a creative landscape'},background:{mode:'image',color:'#26202f',gradientStart:'#8b6bd8',gradientEnd:'#11131d',gradientAngle:135,image:'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1800&q=85'},typography:{font:'Plus Jakarta Sans',size:89,weight:800,line:0.98,letter:-.085,align:'left',color:'#f3f0eb',transform:'none'},spacing:{padding:[0,0,0,0],margin:[0,0,0,0]},border:{width:0,style:'solid',color:'#9d7aff',radius:[0,0,0,0]},shadow:{x:0,y:22,blur:50,spread:0,color:'#000000',opacity:40},responsive:{desktop:89,tablet:null,mobile:48},interaction:{trigger:'Hover',action:'Animation',effect:'Fade'},advanced:{tag:'section',id:'hero-section',classes:'hero-section selected',label:'Hero section',visibility:{desktop:true,tablet:true,mobile:true}},added:[]};
+const state=JSON.parse(JSON.stringify(defaults));
+function notify(m){toast.textContent=m;toast.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>toast.classList.remove('show'),1800)}
+function saveStatus(t='Unsaved changes'){ $('.saved-label').textContent=t; $('.saved-dot').style.background=t==='Saved just now'?'#8be6b0':'#f6c66a'; }
+function snap(){return JSON.stringify(state)}
+function transact(fn,msg){history.push(snap());future.length=0;fn();sync();saveStatus();if(msg)notify(msg)}
+function undo(){if(!history.length)return notify('Nothing to undo');future.push(snap());Object.assign(state,JSON.parse(history.pop()));sync();notify('Change undone');saveStatus('Saved just now')}
+function redo(){if(!future.length)return notify('Nothing to redo');history.push(snap());Object.assign(state,JSON.parse(future.pop()));sync();notify('Change redone');saveStatus('Saved just now')}
+function selectNode(id,msg=true){state.selected=id;sync();if(msg)notify(`${label(id)} selected`)}
+function label(id){if(id==='hero')return'Hero section';return state.added.find(x=>x.id===id)?.label||'Canvas'}
+function esc(v){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function applyState(){
+ hero.classList.toggle('selected',state.selected==='hero');$('.hero-overlay').style.opacity=state.overlay?'1':'0';$('.hero-overlay').style.background=`rgba(8,9,13,${state.overlayOpacity/100})`;
+ const b=state.background;heroImage.style.backgroundImage=b.mode==='image'&&b.image?`url('${b.image}')`:'none';heroImage.style.backgroundSize=state.fit;heroImage.style.backgroundPosition=state.position;
+ if(b.mode==='color')hero.style.background=`${b.color}`;else if(b.mode==='gradient')hero.style.background=`linear-gradient(${b.gradientAngle}deg,${b.gradientStart},${b.gradientEnd})`;else if(b.mode==='video')hero.style.background='linear-gradient(135deg,#161722,#3b255b)';else hero.style.background='#292421';
+ $('.hero-section').style.height=`${state.height}px`;$('.hero-content h1').style.cssText=`font-family:${state.typography.font};font-size:${state.typography.size}px;font-weight:${state.typography.weight};line-height:${state.typography.line};letter-spacing:${state.typography.letter}em;text-align:${state.typography.align};color:${state.typography.color};text-transform:${state.typography.transform}`;
+ $('.hero-content').style.padding=`${state.spacing.padding.join('px ')}px`;$('.hero-section').style.margin=`${state.spacing.margin.join('px ')}px`;hero.style.border=`${state.border.width}px ${state.border.style} ${state.border.color}`;hero.style.borderRadius=state.border.radius.map(x=>`${x}px`).join(' ');hero.style.boxShadow=`${state.shadow.x}px ${state.shadow.y}px ${state.shadow.blur}px ${state.shadow.spread}px ${state.shadow.color}${hexAlpha(state.shadow.opacity)}`;
+ const lines=state.content.headline.split('\n');$('.hero-content h1').innerHTML=`${esc(lines[0]||'')}<br><i>${esc(lines.slice(1).join(' ')||'')}</i>`;$('.hero-content p').textContent=state.content.copy;$('.hero-cta').childNodes[0].textContent=`${state.content.cta} `;
+ $('.canvas-stage').classList.toggle('show-grid',state.grid);$('.canvas-stage').classList.toggle('show-comments',state.comments);$('#overlayOpacity')?.setAttribute('value',state.overlayOpacity);$('#opacityValue')&&( $('#opacityValue').textContent=`${state.overlayOpacity}%`);$('#focalDot')&&( $('#focalDot').style.left=`${state.focal.x}%`,$('#focalDot').style.top=`${state.focal.y}%`);
 }
-function saveStatus(label = 'Saved just now') {
-  savedLabel.textContent = label;
-  $('.saved-dot').style.background = '#8be6b0';
+function hexAlpha(op){return Math.round(op/100*255).toString(16).padStart(2,'0')}
+function renderNodes(){ $$('.added-node').forEach(n=>n.remove());const anchor=$('.site-strip');state.added.forEach(x=>{const n=document.createElement('div');n.className=`added-node added-node-${x.type}`;n.dataset.nodeId=x.id;n.tabIndex=0;n.innerHTML=`<span class="added-node-icon">${x.icon}</span><span data-editable>${esc(x.label)}</span><button class="node-remove" aria-label="Remove ${esc(x.label)}">×</button>`;anchor.before(n);n.onclick=e=>{if(!e.target.closest('button'))selectNode(x.id)};n.ondblclick=e=>{e.stopPropagation();inline(n.querySelector('[data-editable]'),x.id)};$('.node-remove',n).onclick=e=>{e.stopPropagation();removeNode(x.id)} });}
+function renderNav(){const nav=$('.navigator');$('.navigator-tree',nav)?.remove();const t=document.createElement('div');t.className='navigator-tree';t.innerHTML=`<button data-nav-id="hero" class="${state.selected==='hero'?'active':''}">▾ Hero section</button>${state.added.map(x=>`<button data-nav-id="${x.id}" class="${state.selected===x.id?'active':''}">↳ ${esc(x.label)}</button>`).join('')}`;nav.append(t);$$('[data-nav-id]',t).forEach(b=>b.onclick=()=>selectNode(b.dataset.navId));$('.crumb-current').textContent=label(state.selected);$('.breadcrumbs span:last-child').textContent=label(state.selected);inspectorTitle.textContent=label(state.selected);}
+function addNode(type,labelText,icon){const id=`node-${Date.now()}`;state.added.push({id,type,label:labelText,icon});state.selected=id}
+function removeNode(id){transact(()=>{state.added=state.added.filter(x=>x.id!==id);state.selected='hero'},'Element removed')}
+function duplicate(){if(state.selected==='hero')transact(()=>addNode('section','Hero section copy','✦'),'Hero section duplicated');else{const x=state.added.find(a=>a.id===state.selected);if(x)transact(()=>addNode(x.type,`${x.label} copy`,x.icon),`${x.label} duplicated`)}}
+function deleteSelected(){if(state.selected==='hero')transact(()=>state.selected=null,'Hero section deselected');else if(state.selected)removeNode(state.selected)}
+function inline(el,id='hero'){if(el.contentEditable==='true')return;const before=snap(),old=el.textContent;el.contentEditable='true';el.focus();const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);const finish=()=>{el.contentEditable='false';if(old!==el.textContent){if(id==='hero')state.content.headline=el.textContent;else{const x=state.added.find(a=>a.id===id);if(x)x.label=el.textContent}history.push(before);future.length=0;sync();saveStatus();notify('Text updated')}el.removeEventListener('blur',finish);el.removeEventListener('keydown',key)};const key=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();el.blur()}if(e.key==='Escape'){el.textContent=old;el.blur()}};el.addEventListener('blur',finish);el.addEventListener('keydown',key);notify('Inline editing — press Enter to save')}
+function field(labelText,html){return`<label class="field-label">${labelText}</label>${html}`}
+function input(id,val,type='text',unit=''){return`<div class="input-unit"><input id="${id}" type="${type}" value="${esc(val)}" />${unit?`<span>${unit}</span>`:''}</div>`}
+function group(title,body,open=false){return`<div class="inspector-group ${open?'open':''}"><button class="group-title">${title}<span>${open?'⌃':'›'}</span></button><div class="group-body" ${open?'':'style="display:none"'}>${body}</div></div>`}
+function backgroundMarkup(){const b=state.background;let body=`<div class="segmented">${['image','color','gradient','video'].map(m=>`<button class="bg-type ${b.mode===m?'active':''}" data-mode="${m}">${title(m)}</button>`).join('')}</div>`;if(b.mode==='image')body+=`<div class="media-card"><div class="media-thumb" style="background-image:url('${b.image||''}')"></div><div><strong>${b.image?'northstar-hero.jpg':'No image'}</strong><small>Demo media library</small></div><button class="media-more" id="openMedia">⋯</button></div><div class="button-row"><button class="outline-btn" id="changeImage">Change image</button><button class="outline-btn icon-only" id="removeImage">⌫</button></div>${field('Fit',`<select id="fitControl"><option>Cover</option><option>Contain</option><option>Fill</option></select>`)}${field('Position',`<select id="positionControl"><option>Center center</option><option>Center top</option><option>Left center</option><option>Right center</option></select>`)}<div class="control-row"><label>Focal point</label><div class="focal-picker" id="focalPicker"><span id="focalDot"></span><i></i></div></div>`;if(b.mode==='color')body+=`<div class="color-editor"><div class="large-swatch" style="background:${b.color}"></div>${field('Hex value',input('bgHex',b.color))}<button class="apply-content" id="applyColor">Apply color</button></div>`;if(b.mode==='gradient')body+=`${field('Start color',input('gradStart',b.gradientStart))}${field('End color',input('gradEnd',b.gradientEnd))}${field('Angle',input('gradAngle',b.gradientAngle,'number','deg'))}`;if(b.mode==='video')body+=`<div class="video-placeholder"><span>◉</span><b>Video background</b><small>Prototype preview mode</small><button class="outline-btn" id="selectVideo">Choose demo video</button></div>`;body+=`<div class="control-row"><label>Overlay</label><button class="toggle ${state.overlay?'active':''}" id="overlayToggle"><span></span></button></div>${field('Overlay color',`<button class="color-control" id="overlayColor"><span class="color-swatch"></span>#08090D <b>⌄</b></button>`)}${field('Opacity',`<div class="range-wrap"><input type="range" id="overlayOpacity" min="0" max="100" value="${state.overlayOpacity}" /><output id="opacityValue">${state.overlayOpacity}%</output></div>`)}`;return group('Background',body,true)}
+function styleMarkup(){const t=state.typography,s=state.spacing,r=state.border,sh=state.shadow;return backgroundMarkup()+group('Layout',`${field('Min height',input('heightControl',state.height,'number','px'))}<div class="two-controls">${field('Content width',input('contentWidth',1180,'number','px'))}</div>`,true)+group('Typography',`${field('Font family',`<select id="fontFamily"><option>Plus Jakarta Sans</option><option>Inter</option><option>JetBrains Mono</option></select>`)}<div class="two-controls">${field('Size',input('typeSize',t.size,'number','px'))}${field('Weight',`<select id="typeWeight"><option>400</option><option>500</option><option>600</option><option>700</option><option>800</option></select>`)}</div><div class="two-controls">${field('Line height',input('lineHeight',t.line))}${field('Letter spacing',input('letterSpacing',t.letter,'text','em'))}</div>${field('Alignment',`<div class="align-control" id="typeAlign"><button>≡</button><button>≣</button><button>≡</button></div>`)}${field('Text color',`<button class="color-control" id="typeColor"><span class="color-swatch" style="background:${t.color}"></span>${t.color}</button>`)}${field('Transform',`<select id="typeTransform"><option>none</option><option>uppercase</option><option>lowercase</option></select>`)}`,false)+group('Spacing',`${field('Padding',`<div class="box-grid">${['Top','Right','Bottom','Left'].map((x,i)=>input(`pad${i}`,s.padding[i],'number','px')).join('')}</div>`)}${field('Margin',`<div class="box-grid">${['Top','Right','Bottom','Left'].map((x,i)=>input(`mar${i}`,s.margin[i],'number','px')).join('')}</div>`)}`,false)+group('Border & radius',`${field('Border width',input('borderWidth',r.width,'number','px'))}${field('Border style',`<select id="borderStyle"><option>solid</option><option>dashed</option><option>dotted</option></select>`)}${field('Border color',`<button class="color-control" id="borderColor"><span class="color-swatch" style="background:${r.color}"></span>${r.color}</button>`)}${field('Radius',`<div class="box-grid">${r.radius.map((v,i)=>input(`rad${i}`,v,'number','px')).join('')}</div>`)}`,false)+group('Shadow',`${['X','Y','Blur','Spread'].map((x,i)=>field(x,input(`shadow${i}`,[sh.x,sh.y,sh.blur,sh.spread][i],'number','px')).replace('field-label','field-label inline-field')).join('')}${field('Color',`<button class="color-control" id="shadowColor"><span class="color-swatch" style="background:${sh.color}"></span>${sh.color}</button>`)}${field('Opacity',input('shadowOpacity',sh.opacity,'number','%'))}`,false)+group('Responsive',`${field('Breakpoint',`<div class="responsive-row"><b>Desktop</b><span>${t.size}px</span></div><div class="responsive-row"><b>Tablet</b><span>${state.responsive.tablet===null?'Inherited':state.responsive.tablet+'px'}</span></div><div class="responsive-row"><b>Mobile</b><span>${state.responsive.mobile}px <button id="mobileOverride">Edit</button></span></div>`)}<button class="apply-content" id="createOverride">Create mobile override</button>`,false)+group('Interactions',`${field('Trigger',`<select id="interactionTrigger"><option>Hover</option><option>Click</option></select>`)}${field('Action',`<select id="interactionAction"><option>Animation</option><option>Link</option><option>Toggle</option></select>`)}${field('Animation',`<select id="interactionEffect"><option>Fade</option><option>Slide</option><option>Scale</option></select>`)}<button class="apply-content" id="testInteraction">Test interaction</button>`,false)}
+function contentMarkup(){return group('Text content',`${field('Headline',`<textarea class="text-field" id="headlineField">${esc(state.content.headline)}</textarea>`)}${field('Supporting copy',`<textarea class="text-field" id="copyField">${esc(state.content.copy)}</textarea>`)}${field('CTA label',`<input class="text-field" id="ctaField" value="${esc(state.content.cta)}" />`)}${field('Alt text',`<input class="text-field" id="altField" value="${esc(state.content.alt)}" />`)}<button class="apply-content" id="applyContent">Apply content</button>`,true)+group('Media',`<div class="content-media-row"><span>Hero image</span><button class="outline-btn" id="contentChangeImage">Replace</button></div>`,true)}
+function advancedMarkup(){const a=state.advanced;return group('Element identity',`${field('HTML tag',`<select id="htmlTag"><option>section</option><option>header</option><option>main</option><option>div</option></select>`)}${field('Element ID',`<input class="text-field" id="elementId" value="${a.id}" />`)}${field('CSS classes',`<input class="text-field" id="cssClasses" value="${a.classes}" />`)}`,true)+group('Visibility',`<div class="visibility-grid">${['desktop','tablet','mobile'].map(x=>`<button class="selectable-row ${a.visibility[x]?'active':''}" data-vis="${x}">${a.visibility[x]?'✓':'○'} ${title(x)}</button>`).join('')}</div>`,true)+group('Accessibility',`${field('Aria label',`<input class="text-field" id="ariaLabel" value="${a.label}" />`)}<button class="selectable-row active">✓ Keyboard focus enabled</button>`,true)}
+function title(s){return s.charAt(0).toUpperCase()+s.slice(1)}
+function renderInspector(tab=activeTab,announce=true){activeTab=tab;$$('.inspector-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));inspectorContent.innerHTML=tab==='style'?styleMarkup():tab==='content'?contentMarkup():advancedMarkup();bindInspector();if(announce)notify(`${title(tab)} controls`)}
+function bindInspector(){
+ $$('.group-title').forEach(b=>b.onclick=()=>{const g=b.closest('.inspector-group');g.classList.toggle('open');const body=$('.group-body',g);body.style.display=g.classList.contains('open')?'block':'none';$('span',b).textContent=g.classList.contains('open')?'⌃':'›'});
+ $$('.bg-type').forEach(b=>b.onclick=()=>transact(()=>state.background.mode=b.dataset.mode,`Background mode: ${b.textContent}`));
+ $('#openMedia')?.addEventListener('click',openMedia);$('#changeImage')?.addEventListener('click',openMedia);$('#contentChangeImage')?.addEventListener('click',openMedia);$('#removeImage')?.addEventListener('click',()=>transact(()=>state.background.image='', 'Background image removed'));
+ $('#fitControl')?.addEventListener('change',e=>transact(()=>state.fit=e.target.value.toLowerCase(),`Image fit: ${e.target.value}`));$('#positionControl')?.addEventListener('change',e=>transact(()=>state.position=e.target.value.toLowerCase(),`Image position: ${e.target.value}`));
+ $('#focalPicker')?.addEventListener('click',e=>transact(()=>{const r=e.currentTarget.getBoundingClientRect();state.focal={x:(e.clientX-r.left)/r.width*100,y:(e.clientY-r.top)/r.height*100};state.position=`${state.focal.x}% ${state.focal.y}%`},'Focal point updated'));
+ $('#overlayToggle')?.addEventListener('click',()=>transact(()=>state.overlay=!state.overlay,state.overlay?'Overlay enabled':'Overlay hidden'));$('#overlayOpacity')?.addEventListener('change',e=>transact(()=>state.overlayOpacity=+e.target.value,'Overlay opacity updated'));
+ $('#applyColor')?.addEventListener('click',()=>transact(()=>state.background.color=$('#bgHex').value,'Background color applied'));['gradStart','gradEnd','gradAngle'].forEach(id=>$('#'+id)?.addEventListener('input',()=>{state.background.gradientStart=$('#gradStart').value;state.background.gradientEnd=$('#gradEnd').value;state.background.gradientAngle=+$('#gradAngle').value;applyState()}));
+ $('#heightControl')?.addEventListener('change',e=>transact(()=>state.height=Math.max(420,Math.min(1000,+e.target.value||720)),'Hero height updated'));$('#selectVideo')?.addEventListener('click',()=>notify('Demo video background selected'));
+ bindStyleAdvanced();bindContent();bindGroupsOnly();
 }
-function snapshot() {
-  return JSON.stringify({ ...state, focal: { ...state.focal }, added: state.added.map(x => ({ ...x })) });
+function bindGroupsOnly(){$$('.group-title').forEach(b=>b.onclick=b.onclick)}
+function bindStyleAdvanced(){const map={fontFamily:['typography','font'],typeSize:['typography','size'],typeWeight:['typography','weight'],lineHeight:['typography','line'],letterSpacing:['typography','letter'],typeTransform:['typography','transform'],borderWidth:['border','width'],borderStyle:['border','style'],shadowOpacity:['shadow','opacity']};Object.entries(map).forEach(([id,[obj,key]])=>$('#'+id)?.addEventListener('change',e=>transact(()=>state[obj][key]=id==='typeSize'||id==='typeWeight'||id==='borderWidth'||id==='shadowOpacity'||id==='lineHeight'?+e.target.value:e.target.value,`${title(key)} updated`)));
+ ['pad','mar','rad'].forEach(prefix=>[0,1,2,3].forEach(i=>$('#'+prefix+i)?.addEventListener('change',e=>transact(()=>{const target=prefix==='pad'?state.spacing.padding:prefix==='mar'?state.spacing.margin:state.border.radius;target[i]=+e.target.value||0},`${title(prefix)} updated`))));
+ $('#createOverride')?.addEventListener('click',()=>transact(()=>state.responsive.mobile=48,'Mobile override created'));$('#testInteraction')?.addEventListener('click',()=>{hero.classList.add(`demo-${state.interaction.effect.toLowerCase()}`);setTimeout(()=>hero.classList.remove(`demo-${state.interaction.effect.toLowerCase()}`),700);notify(`${state.interaction.effect} interaction preview`)});
+ ['interactionTrigger','interactionAction','interactionEffect'].forEach(id=>$('#'+id)?.addEventListener('change',e=>{const k=id.replace('interaction','').toLowerCase();transact(()=>state.interaction[k]=e.target.value,`${title(k)} updated`)}));
+ ['htmlTag','elementId','cssClasses','ariaLabel'].forEach(id=>$('#'+id)?.addEventListener('change',e=>transact(()=>state.advanced[{htmlTag:'tag',elementId:'id',cssClasses:'classes',ariaLabel:'label'}[id]]=e.target.value,'Advanced setting updated')));$$('[data-vis]').forEach(b=>b.onclick=()=>transact(()=>state.advanced.visibility[b.dataset.vis]=!state.advanced.visibility[b.dataset.vis],'Visibility updated'));
 }
-function restore(serialized) {
-  const parsed = JSON.parse(serialized);
-  Object.assign(state, parsed);
-  state.focal = { ...parsed.focal };
-  state.added = parsed.added || [];
-  syncUI();
-}
-function transact(mutator, message) {
-  history.push(snapshot());
-  future.length = 0;
-  mutator();
-  syncUI();
-  if (message) notify(message);
-  saveStatus('Unsaved changes');
-}
-function undo() {
-  if (!history.length) return notify('Nothing to undo');
-  future.push(snapshot());
-  restore(history.pop());
-  notify('Change undone');
-  saveStatus('Saved just now');
-}
-function redo() {
-  if (!future.length) return notify('Nothing to redo');
-  history.push(snapshot());
-  restore(future.pop());
-  notify('Change redone');
-  saveStatus('Saved just now');
-}
-function selectNode(id, announce = true) {
-  state.selected = id;
-  syncUI();
-  if (announce) notify(`${nodeLabel(id)} selected`);
-}
-function nodeLabel(id) {
-  if (id === 'hero') return 'Hero section';
-  const item = state.added.find(x => x.id === id);
-  return item ? item.label : 'Canvas';
-}
-function selectedNode() {
-  return state.selected === 'hero' ? hero : $(`[data-node-id="${state.selected}"]`);
-}
-function markEditorNode(node, id) {
-  node.classList.add('editor-node');
-  node.dataset.nodeId = id;
-  node.tabIndex = 0;
-  node.addEventListener('click', e => { if (!e.target.closest('button,a,input')) selectNode(id); });
-  node.addEventListener('dblclick', e => {
-    e.stopPropagation();
-    const text = node.querySelector('[data-editable]');
-    if (text) beginInlineEdit(text);
-  });
-}
-function beginInlineEdit(element) {
-  if (element.isContentEditable) return;
-  const before = element.textContent;
-  element.contentEditable = 'true';
-  element.focus();
-  const range = document.createRange();
-  range.selectNodeContents(element);
-  const selection = window.getSelection();
-  selection.removeAllRanges();
-  selection.addRange(range);
-  const finish = () => {
-    element.contentEditable = 'false';
-    if (before !== element.textContent) {
-      history.push(snapshot());
-      future.length = 0;
-      notify('Text updated');
-      saveStatus('Unsaved changes');
-    }
-    element.removeEventListener('blur', finish);
-    element.removeEventListener('keydown', onKey);
-  };
-  const onKey = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); element.blur(); } if (e.key === 'Escape') { element.textContent = before; element.blur(); } };
-  element.addEventListener('blur', finish);
-  element.addEventListener('keydown', onKey);
-  notify('Inline editing — press Enter to save');
-}
-function addNode(type, label, icon) {
-  const id = `node-${Date.now()}`;
-  state.added.push({ id, type, label, icon });
-  const node = document.createElement('div');
-  node.className = `added-node added-node-${type}`;
-  node.innerHTML = `<span class="added-node-icon">${icon}</span><span data-editable>${label}</span><button class="node-remove" aria-label="Remove ${label}">×</button>`;
-  $('.site-strip').before(node);
-  markEditorNode(node, id);
-  $('.node-remove', node).addEventListener('click', e => { e.stopPropagation(); removeNode(id); });
-  selectNode(id, false);
-}
-function removeNode(id) {
-  transact(() => {
-    state.added = state.added.filter(x => x.id !== id);
-    $(`[data-node-id="${id}"]`)?.remove();
-    state.selected = 'hero';
-  }, 'Element removed');
-}
-function duplicateSelected() {
-  if (state.selected === 'hero') {
-    transact(() => addNode('section', 'Hero section copy', '✦'), 'Hero section duplicated');
-  } else {
-    const item = state.added.find(x => x.id === state.selected);
-    if (!item) return;
-    transact(() => addNode(item.type, `${item.label} copy`, item.icon), `${item.label} duplicated`);
-  }
-}
-function deleteSelected() {
-  if (state.selected === 'hero') {
-    transact(() => { hero.classList.remove('selected'); state.selected = null; }, 'Hero section deselected');
-  } else if (state.selected) removeNode(state.selected);
-}
-function renderAddedNodes() {
-  $$('.added-node').forEach(n => n.remove());
-  const anchor = $('.site-strip');
-  state.added.forEach(item => {
-    const node = document.createElement('div');
-    node.className = `added-node added-node-${item.type}`;
-    node.innerHTML = `<span class="added-node-icon">${item.icon}</span><span data-editable>${item.label}</span><button class="node-remove" aria-label="Remove ${item.label}">×</button>`;
-    anchor.before(node);
-    markEditorNode(node, item.id);
-    $('.node-remove', node).addEventListener('click', e => { e.stopPropagation(); removeNode(item.id); });
-  });
-}
-function applyStyle() {
-  hero.classList.toggle('selected', state.selected === 'hero');
-  heroOverlay.style.opacity = state.overlay ? '1' : '0';
-  heroOverlay.style.background = `rgba(8,9,13,${state.overlayOpacity / 100})`;
-  heroImage.style.backgroundSize = state.fit;
-  heroImage.style.backgroundPosition = state.position;
-  $('.hero-section').style.height = `${state.height}px`;
-  $('#overlayOpacity').value = state.overlayOpacity;
-  $('#opacityValue').textContent = `${state.overlayOpacity}%`;
-  $('#overlayToggle').classList.toggle('active', state.overlay);
-  $('#fitControl').value = titleCase(state.fit);
-  $('#positionControl').value = state.position.replace(/\b\w/g, c => c.toUpperCase());
-  $('#heightControl').value = state.height;
-  $('#focalDot').style.left = `${state.focal.x}%`;
-  $('#focalDot').style.top = `${state.focal.y}%`;
-  $('.canvas-stage').classList.toggle('show-grid', state.grid);
-  $('.canvas-stage').classList.toggle('show-comments', state.comments);
-}
-function titleCase(value) { return value.charAt(0).toUpperCase() + value.slice(1); }
-function syncInspectorSelection() {
-  const label = nodeLabel(state.selected || 'canvas');
-  inspectorTitle.textContent = label;
-  $('.crumb-current').textContent = label;
-  $('.breadcrumbs span:last-child').textContent = label;
-  $$('.editor-node').forEach(node => node.classList.toggle('selected-node', node.dataset.nodeId === state.selected));
-}
-function syncUI() {
-  canvas.classList.remove('device-desktop', 'device-tablet', 'device-mobile');
-  canvas.classList.add(`device-${state.device}`);
-  $$('.device-top').forEach(btn => btn.classList.toggle('active', btn.dataset.device === state.device));
-  appShell.classList.toggle('mobile-builder', state.device === 'mobile');
-  applyStyle();
-  renderAddedNodes();
-  syncInspectorSelection();
-  renderNavigator();
-  if (activeTab !== 'style') renderInspectorTab(activeTab, false);
-  if (state.device !== 'mobile') closeMobileDrawer();
-}
-function renderNavigator() {
-  const nav = $('.navigator');
-  const existing = $('.navigator-tree', nav);
-  if (existing) existing.remove();
-  const tree = document.createElement('div');
-  tree.className = 'navigator-tree';
-  tree.innerHTML = `<button data-nav-id="hero" class="${state.selected === 'hero' ? 'active' : ''}">▾ Hero section</button>${state.added.map(x => `<button data-nav-id="${x.id}" class="${state.selected === x.id ? 'active' : ''}">↳ ${x.label}</button>`).join('')}`;
-  nav.append(tree);
-  $$('[data-nav-id]', tree).forEach(btn => btn.addEventListener('click', () => selectNode(btn.dataset.navId)));
-}
-function renderInspectorTab(tab, announce = true) {
-  activeTab = tab;
-  $$('.inspector-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
-  if (tab === 'style') { inspectorContent.innerHTML = styleMarkup(); bindStyleMarkup(); }
-  if (tab === 'content') { inspectorContent.innerHTML = contentMarkup(); bindContentMarkup(); }
-  if (tab === 'advanced') { inspectorContent.innerHTML = advancedMarkup(); bindAdvancedMarkup(); }
-  if (announce) notify(`${titleCase(tab)} controls`);
-}
-function styleMarkup() {
-  return `<div class="inspector-group open"><button class="group-title">Background <span>⌃</span></button><div class="group-body"><div class="segmented"><button class="bg-type active">Image</button><button class="bg-type">Color</button><button class="bg-type">Gradient</button><button class="bg-type">Video</button></div><div class="media-card"><div class="media-thumb"></div><div><strong>northstar-hero.jpg</strong><small>1920 × 1280 · JPG</small></div><button class="media-more">⋯</button></div><div class="button-row"><button class="outline-btn" id="changeImage">Change image</button><button class="outline-btn icon-only" id="removeImage" title="Remove image">⌫</button></div><div class="control-row"><label>Fit</label><select id="fitControl"><option>Cover</option><option>Contain</option><option>Fill</option></select></div><div class="control-row"><label>Position</label><select id="positionControl"><option>Center center</option><option>Center top</option><option>Left center</option><option>Right center</option></select></div><div class="control-row focal-row"><label>Focal point</label><div class="focal-picker" id="focalPicker"><span id="focalDot"></span><i></i></div></div><div class="control-row"><label>Overlay</label><button class="toggle active" id="overlayToggle"><span></span></button></div><div class="control-row"><label>Overlay color</label><button class="color-control" id="colorControl"><span class="color-swatch"></span>#08090D <b>⌄</b></button></div><div class="control-row"><label>Opacity</label><div class="range-wrap"><input type="range" id="overlayOpacity" min="0" max="100" value="${state.overlayOpacity}" /><output id="opacityValue">${state.overlayOpacity}%</output></div></div></div></div><div class="inspector-group open"><button class="group-title">Layout <span>⌃</span></button><div class="group-body"><div class="two-controls"><div><label>Min height</label><div class="input-unit"><input id="heightControl" type="number" value="${state.height}" /><span>px</span></div></div><div><label>Content width</label><div class="input-unit"><input type="number" value="1180" /><span>px</span></div></div></div><div class="align-control"><button>≡</button><button class="active">≣</button><button>≡</button><button>↕</button><button>↕</button></div></div></div>${collapsibleMarkup(['Typography', 'Spacing', 'Border & radius', 'Shadow', 'Responsive', 'Interactions'])}`;
-}
-function collapsibleMarkup(items) { return items.map(item => `<div class="inspector-group"><button class="group-title">${item} <span>›</span></button><div class="group-body hidden-body"><div class="empty-control">Fine-tune ${item.toLowerCase()} for the selected element.</div></div></div>`).join(''); }
-function contentMarkup() {
-  return `<div class="inspector-group open"><button class="group-title">Text content <span>⌃</span></button><div class="group-body"><label class="field-label">Headline</label><textarea class="text-field" id="headlineField">Make space\nfor wonder.</textarea><label class="field-label">Supporting copy</label><textarea class="text-field" id="copyField">Northstar is a creative studio for people building a more considered future.</textarea><label class="field-label">CTA label</label><input class="text-field" id="ctaField" value="Explore our work" /><button class="apply-content" id="applyContent">Apply content</button></div></div><div class="inspector-group open"><button class="group-title">Media <span>⌃</span></button><div class="group-body"><div class="content-media-row"><span>Hero image</span><button class="outline-btn" id="contentChangeImage">Replace</button></div><div class="content-media-row"><span>Alt text</span><input class="text-field compact" value="Warm sunset over a creative landscape" /></div></div></div>`;
-}
-function advancedMarkup() {
-  return `<div class="inspector-group open"><button class="group-title">Element identity <span>⌃</span></button><div class="group-body"><label class="field-label">HTML tag</label><select class="text-field"><option>section</option><option>header</option><option>main</option></select><label class="field-label">Element ID</label><input class="text-field" value="hero-section" /><label class="field-label">CSS classes</label><input class="text-field" value="hero-section selected" /></div></div><div class="inspector-group open"><button class="group-title">Visibility <span>⌃</span></button><div class="group-body"><div class="visibility-row"><span>Desktop</span><button class="toggle active"><span></span></button></div><div class="visibility-row"><span>Tablet</span><button class="toggle active"><span></span></button></div><div class="visibility-row"><span>Mobile</span><button class="toggle active"><span></span></button></div></div></div><div class="inspector-group open"><button class="group-title">Accessibility <span>⌃</span></button><div class="group-body"><label class="field-label">Aria label</label><input class="text-field" value="Hero section" /><label class="field-label">Keyboard focus</label><button class="selectable-row active">✓ Focusable element</button></div></div>`;
-}
-function bindGroupToggles() {
-  $$('.group-title').forEach(btn => btn.addEventListener('click', () => {
-    const group = btn.closest('.inspector-group');
-    group.classList.toggle('open');
-    const body = $('.group-body', group);
-    if (body) body.style.display = group.classList.contains('open') ? 'block' : 'none';
-    const span = $('span', btn);
-    if (span) span.textContent = group.classList.contains('open') ? '⌃' : '›';
-  }));
-}
-function bindStyleMarkup() {
-  bindGroupToggles();
-  $$('.bg-type').forEach(btn => btn.addEventListener('click', () => { $$('.bg-type').forEach(b => b.classList.remove('active')); btn.classList.add('active'); notify(`Background mode: ${btn.textContent}`); }));
-  $('#overlayOpacity').addEventListener('input', e => transact(() => { state.overlayOpacity = Number(e.target.value); }, null));
-  $('#overlayToggle').addEventListener('click', () => transact(() => { state.overlay = !state.overlay; }, state.overlay ? 'Overlay enabled' : 'Overlay hidden'));
-  $('#fitControl').addEventListener('change', e => transact(() => { state.fit = e.target.value.toLowerCase(); }, `Image fit: ${e.target.value}`));
-  $('#positionControl').addEventListener('change', e => transact(() => { state.position = e.target.value.toLowerCase(); }, `Focal position: ${e.target.value}`));
-  $('#heightControl').addEventListener('input', e => { state.height = Math.max(420, Math.min(1000, Number(e.target.value) || 720)); applyStyle(); });
-  $('#heightControl').addEventListener('change', () => { history.push(snapshot()); future.length = 0; saveStatus('Unsaved changes'); });
-  $('#focalPicker').addEventListener('click', e => transact(() => { const r = e.currentTarget.getBoundingClientRect(); state.focal = { x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 }; state.position = `${state.focal.x}% ${state.focal.y}%`; }, `Focal point ${Math.round(state.focal.x)}% / ${Math.round(state.focal.y)}%`));
-  $('#changeImage')?.addEventListener('click', () => notify('Media picker opened — choose a new image')); $('#removeImage')?.addEventListener('click', () => notify('Image removal queued'));
-  $('#colorControl')?.addEventListener('click', () => notify('Color picker opened'));
-}
-function bindContentMarkup() {
-  bindGroupToggles();
-  $('#applyContent').addEventListener('click', () => {
-    const headline = $('#headlineField').value.split('\n');
-    const h1 = $('.hero-content h1');
-    h1.innerHTML = `${escapeHTML(headline[0] || '')}<br><i>${escapeHTML(headline.slice(1).join(' ') || '')}</i>`;
-    $('.hero-content p').textContent = $('#copyField').value;
-    $('.hero-cta').childNodes[0].textContent = `${$('#ctaField').value} `;
-    transact(() => {}, 'Content applied');
-  });
-  $('#contentChangeImage')?.addEventListener('click', () => notify('Content media picker opened'));
-}
-function bindAdvancedMarkup() { bindGroupToggles(); $$('.toggle').forEach(toggle => toggle.addEventListener('click', () => toggle.classList.toggle('active'))); $$('.selectable-row').forEach(row => row.addEventListener('click', () => row.classList.toggle('active'))); }
-function escapeHTML(value) { return value.replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c])); }
-function openMobileDrawer(name) {
-  mobileDrawer = name;
-  $('.mobile-builder-ui')?.classList.add('drawer-open');
-  $$('.mobile-drawer').forEach(drawer => drawer.classList.toggle('active', drawer.dataset.drawer === name));
-  $$('.mobile-dock button').forEach(btn => btn.classList.toggle('active', btn.dataset.mobilePanel === name));
-}
-function closeMobileDrawer() {
-  mobileDrawer = null;
-  $('.mobile-builder-ui')?.classList.remove('drawer-open');
-  $$('.mobile-drawer').forEach(drawer => drawer.classList.remove('active'));
-  $$('.mobile-dock button').forEach(btn => btn.classList.remove('active'));
-}
-function buildMobileUI() {
-  if ($('.mobile-builder-ui')) return;
-  const ui = document.createElement('div');
-  ui.className = 'mobile-builder-ui';
-  ui.innerHTML = `<div class="mobile-modebar"><button class="mobile-close">×</button><div><b>Mobile layout</b><span>390 × 844 · Editing responsive style</span></div><button class="mobile-save">Save</button></div><div class="mobile-drawers"><section class="mobile-drawer" data-drawer="add"><div class="mobile-drawer-head"><b>Add to mobile page</b><button class="mobile-drawer-close">×</button></div><input class="mobile-search" placeholder="Search mobile elements" />${mobilePalette()}</section><section class="mobile-drawer" data-drawer="layers"><div class="mobile-drawer-head"><b>Mobile layers</b><button class="mobile-drawer-close">×</button></div><div class="mobile-layer-list"><button data-nav-id="hero">✦ <span>Hero section</span><b>›</b></button><button>☰ <span>Mobile navigation</span><b>›</b></button>${state.added.map(x => `<button data-nav-id="${x.id}">${x.icon} <span>${x.label}</span><b>›</b></button>`).join('')}</div><button class="mobile-add-section">+ Add section</button></section><section class="mobile-drawer" data-drawer="inspect"><div class="mobile-drawer-head"><b>Quick inspector</b><button class="mobile-drawer-close">×</button></div><div class="mobile-inspect-grid"><button data-mobile-action="content">✎<span>Content</span></button><button data-mobile-action="style">✦<span>Style</span></button><button data-mobile-action="spacing">↕<span>Spacing</span></button><button data-mobile-action="visibility">◉<span>Visibility</span></button></div><div class="mobile-breakpoint"><span>Breakpoint</span><b>Mobile · 390px</b></div><div class="mobile-breakpoint"><span>Selected</span><b>${nodeLabel(state.selected)}</b></div></section></div><nav class="mobile-dock"><button data-mobile-panel="add"><span>＋</span>Add</button><button data-mobile-panel="layers"><span>☷</span>Layers</button><button data-mobile-panel="inspect"><span>✦</span>Inspect</button><button data-mobile-panel="preview"><span>◉</span>Preview</button></nav>`;
-  $('.canvas-stage').append(ui);
-  $$('.mobile-dock button').forEach(btn => btn.addEventListener('click', () => btn.dataset.mobilePanel === 'preview' ? notify('Mobile preview mode') : openMobileDrawer(btn.dataset.mobilePanel)));
-  $$('.mobile-drawer-close, .mobile-close').forEach(btn => btn.addEventListener('click', closeMobileDrawer));
-  $('.mobile-save').addEventListener('click', () => { saveStatus('Saved just now'); notify('Mobile changes saved'); });
-  $$('.mobile-layer-list [data-nav-id]').forEach(btn => btn.addEventListener('click', () => { selectNode(btn.dataset.navId); closeMobileDrawer(); }));
-  $$('.mobile-inspect-grid button').forEach(btn => btn.addEventListener('click', () => { if (btn.dataset.mobileAction === 'content') renderInspectorTab('content'); if (btn.dataset.mobileAction === 'style') renderInspectorTab('style'); notify(`${btn.textContent.trim()} controls opened`); }));
-  $$('.mobile-palette-item').forEach(btn => btn.addEventListener('click', () => transact(() => addNode(btn.dataset.type, btn.dataset.label, btn.dataset.icon), `${btn.dataset.label} added to mobile canvas`)));
-}
-function mobilePalette() { return `<div class="mobile-palette"><p>Drag or tap to insert</p>${[['section','Section','▦'],['text','Text','T'],['image','Image','▣'],['button','Button','↗'],['form','Form','⌁']].map(([type,label,icon]) => `<button class="mobile-palette-item" data-type="${type}" data-label="${label}" data-icon="${icon}"><i>${icon}</i><span>${label}</span><b>＋</b></button>`).join('')}</div>`; }
-
-function setupCanvasControls() {
-  hero.addEventListener('click', e => { if (!e.target.closest('.context-toolbar')) selectNode('hero'); });
-  hero.addEventListener('dblclick', e => { e.stopPropagation(); beginInlineEdit($('.hero-content h1')); });
-  hero.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectNode('hero'); } });
-  $$('.context-toolbar button').forEach(btn => btn.addEventListener('click', e => { e.stopPropagation(); if (btn.dataset.action === 'duplicate') duplicateSelected(); else if (btn.dataset.action === 'delete') deleteSelected(); else notify(`${btn.title} tool active`); }));
-  $$('.device-top').forEach(btn => btn.addEventListener('click', () => transact(() => { state.device = btn.dataset.device; }, `${titleCase(btn.dataset.device)} viewport`)));
-  $$('[data-zoom]').forEach(btn => btn.addEventListener('click', () => { const action = btn.dataset.zoom; if (action === 'in') zoom = Math.min(140, zoom + 10); if (action === 'out') zoom = Math.max(50, zoom - 10); if (action === 'fit') zoom = 100; $('#zoomValue').textContent = `${zoom}%`; canvas.style.transform = `scale(${zoom / 100})`; canvas.style.transformOrigin = 'top center'; notify(action === 'fit' ? 'Canvas fitted' : `Zoom ${zoom}%`); }));
-  $('.navigator-toggle').addEventListener('click', () => { $('.navigator-tree')?.classList.toggle('visible'); notify('Navigator toggled'); });
-  $$('.canvas-tool').forEach(btn => btn.addEventListener('click', () => { if (btn.title === 'Show grid') transact(() => { state.grid = !state.grid; }, state.grid ? 'Grid enabled' : 'Grid hidden'); else if (btn.title === 'Comments') transact(() => { state.comments = !state.comments; }, state.comments ? 'Comments shown' : 'Comments hidden'); else notify('Select tool active'); }));
-  $('.publish-btn').addEventListener('click', () => { saveStatus('Saved just now'); notify('Prototype publish flow ready'); });
-  $('.preview-btn').addEventListener('click', () => notify('Preview mode toggled'));
-  $('.reset-btn').addEventListener('click', () => transact(() => Object.assign(state, { overlay: true, overlayOpacity: 52, fit: 'cover', position: 'center center', height: 720, focal: { x: 50, y: 50 } }), 'Style changes reset'));
-  $$('.add-tab').forEach(btn => btn.addEventListener('click', () => { $$('.add-tab').forEach(b => b.classList.remove('active')); btn.classList.add('active'); notify(`${btn.textContent} panel`); }));
-  $$('.palette-item').forEach(btn => btn.addEventListener('click', () => transact(() => addNode(btn.querySelector('span').textContent.toLowerCase().replace(' ', '-'), btn.querySelector('span').textContent, btn.querySelector('i').textContent), `${btn.querySelector('span').textContent} added`)));
-  $$('.utility-link').forEach(btn => btn.addEventListener('click', () => notify(`${btn.textContent.trim()} opened`)));
-  $$('.inspector-tab').forEach(btn => btn.addEventListener('click', () => renderInspectorTab(btn.dataset.tab)));
-  $$('.top-actions .icon-btn').forEach(btn => { if (btn.title === 'Undo') btn.addEventListener('click', undo); if (btn.title === 'Redo') btn.addEventListener('click', redo); });
-  document.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); } if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); } if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('.search-box input').focus(); } if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveStatus('Saved just now'); notify('Changes saved'); } if (e.key === 'Escape') closeMobileDrawer(); });
-}
-
-buildMobileUI();
-setupCanvasControls();
-renderInspectorTab('style', false);
-syncUI();
+function bindContent(){$('#applyContent')?.addEventListener('click',()=>transact(()=>{state.content.headline=$('#headlineField').value;state.content.copy=$('#copyField').value;state.content.cta=$('#ctaField').value;state.content.alt=$('#altField').value},'Content applied'))}
+function openMedia(){let modal=$('.media-modal');if(!modal){modal=document.createElement('div');modal.className='media-modal';modal.innerHTML=`<div class="media-dialog"><div class="media-dialog-head"><b>Choose media</b><button id="closeMedia">×</button></div><p>Select a demo image for the hero background.</p><div class="media-grid">${['1500534623283-312aade485b7','1497366754035-f200968a6e72','1497366811353-6870744d04b2'].map((id,i)=>`<button class="media-choice" data-media="https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=1800&q=85"><span style="background-image:url('https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=500&q=70')"></span><b>Demo image ${i+1}</b></button>`).join('')}</div></div>`;document.body.append(modal);$('#closeMedia',modal).onclick=()=>modal.remove();$$('.media-choice',modal).forEach(b=>b.onclick=()=>{const url=b.dataset.media;transact(()=>{state.background.mode='image';state.background.image=url},'Image applied');modal.remove()})}modal.classList.add('visible')}
+function buildMobile(){if($('.mobile-builder-ui'))return;const u=document.createElement('div');u.className='mobile-builder-ui';u.innerHTML=`<div class="mobile-modebar"><button class="mobile-close">×</button><div><b>Mobile layout</b><span>390 × 844 · Editing responsive style</span></div><button class="mobile-save">Save</button></div><div class="mobile-drawers"><section class="mobile-drawer" data-drawer="add"><div class="mobile-drawer-head"><b>Add to mobile page</b><button class="mobile-drawer-close">×</button></div><input class="mobile-search" placeholder="Search mobile elements" />${[['section','Section','▦'],['text','Text','T'],['image','Image','▣'],['button','Button','↗'],['form','Form','⌁']].map(x=>`<button class="mobile-palette-item" data-type="${x[0]}" data-label="${x[1]}" data-icon="${x[2]}"><i>${x[2]}</i><span>${x[1]}</span><b>＋</b></button>`).join('')}</section><section class="mobile-drawer" data-drawer="layers"><div class="mobile-drawer-head"><b>Mobile layers</b><button class="mobile-drawer-close">×</button></div><div class="mobile-layer-list"><button data-nav-id="hero">✦ <span>Hero section</span><b>›</b></button>${state.added.map(x=>`<button data-nav-id="${x.id}">${x.icon}<span>${x.label}</span><b>›</b></button>`).join('')}</div><button class="mobile-add-section">+ Add section</button></section><section class="mobile-drawer" data-drawer="inspect"><div class="mobile-drawer-head"><b>Quick inspector</b><button class="mobile-drawer-close">×</button></div><div class="mobile-inspect-grid"><button data-mobile-action="content">✎<span>Content</span></button><button data-mobile-action="style">✦<span>Style</span></button><button data-mobile-action="responsive">↕<span>Responsive</span></button><button data-mobile-action="visibility">◉<span>Visibility</span></button></div><div class="mobile-breakpoint"><span>Breakpoint</span><b>Mobile · 390px</b></div><div class="mobile-breakpoint"><span>Selected</span><b>${label(state.selected)}</b></div></section></div><nav class="mobile-dock"><button data-mobile-panel="add"><span>＋</span>Add</button><button data-mobile-panel="layers"><span>☷</span>Layers</button><button data-mobile-panel="inspect"><span>✦</span>Inspect</button><button data-mobile-panel="preview"><span>◉</span>Preview</button></nav>`;$('.canvas-stage').append(u);$$('.mobile-dock button').forEach(b=>b.onclick=()=>b.dataset.mobilePanel==='preview'?notify('Mobile preview mode'):openDrawer(b.dataset.mobilePanel));$$('.mobile-drawer-close,.mobile-close').forEach(b=>b.onclick=closeDrawer);$('.mobile-save').onclick=()=>{saveStatus('Saved just now');notify('Mobile changes saved')};$$('.mobile-palette-item').forEach(b=>b.onclick=()=>transact(()=>addNode(b.dataset.type,b.dataset.label,b.dataset.icon),`${b.dataset.label} added to mobile canvas`));$$('[data-mobile-action]',u).forEach(b=>b.onclick=()=>b.dataset.mobileAction==='content'?renderInspector('content'):b.dataset.mobileAction==='style'?renderInspector('style'):notify(`${title(b.dataset.mobileAction)} controls opened`));}
+function openDrawer(name){mobileDrawer=name;$('.mobile-builder-ui').classList.add('drawer-open');$$('.mobile-drawer').forEach(d=>d.classList.toggle('active',d.dataset.drawer===name));$$('.mobile-dock button').forEach(b=>b.classList.toggle('active',b.dataset.mobilePanel===name))}
+function closeDrawer(){mobileDrawer=null;$('.mobile-builder-ui')?.classList.remove('drawer-open');$$('.mobile-drawer').forEach(d=>d.classList.remove('active'));$$('.mobile-dock button').forEach(b=>b.classList.remove('active'))}
+function sync(){applyState();renderNodes();renderNav();appShell.classList.toggle('mobile-builder',state.device==='mobile');if(state.device!=='mobile')closeDrawer();if(activeTab)renderInspector(activeTab,false)}
+function setup(){buildMobile();hero.onclick=e=>{if(!e.target.closest('.context-toolbar'))selectNode('hero')};hero.ondblclick=e=>{e.stopPropagation();inline($('.hero-content h1'))};$('.hero-cta').onclick=()=>notify('CTA selected — edit label in Content');$$('.context-toolbar button').forEach(b=>b.onclick=e=>{e.stopPropagation();b.dataset.action==='duplicate'?duplicate():b.dataset.action==='delete'?deleteSelected():notify(`${b.title} tool active`)});$$('.device-top').forEach(b=>b.onclick=()=>transact(()=>state.device=b.dataset.device,`${title(b.dataset.device)} viewport`));$$('[data-zoom]').forEach(b=>b.onclick=()=>{const a=b.dataset.zoom;if(a==='in')zoom=Math.min(140,zoom+10);if(a==='out')zoom=Math.max(50,zoom-10);if(a==='fit')zoom=100;$('#zoomValue').textContent=`${zoom}%`;canvas.style.transform=`scale(${zoom/100})`;canvas.style.transformOrigin='top center';notify(`Zoom ${zoom}%`)});$('.navigator-toggle').onclick=()=>{$('.navigator-tree')?.classList.toggle('visible');notify('Navigator toggled')};$$('.canvas-tool').forEach(b=>b.onclick=()=>b.title==='Show grid'?transact(()=>state.grid=!state.grid,state.grid?'Grid enabled':'Grid hidden'):b.title==='Comments'?transact(()=>state.comments=!state.comments,state.comments?'Comments shown':'Comments hidden'):notify('Select tool active'));$$('.inspector-tab').forEach(b=>b.onclick=()=>renderInspector(b.dataset.tab));$$('.top-actions .icon-btn').forEach(b=>b.title==='Undo'?b.onclick=undo:b.title==='Redo'?b.onclick=redo:null);$('.publish-btn').onclick=()=>{saveStatus('Saved just now');notify('Prototype publish flow ready')};$('.preview-btn').onclick=()=>notify('Preview mode toggled');$('.reset-btn').onclick=()=>transact(()=>Object.assign(state,JSON.parse(JSON.stringify(defaults))),'Builder reset');$$('.add-tab').forEach(b=>b.onclick=()=>notify(`${b.textContent} panel`));$$('.palette-item').forEach(b=>b.onclick=()=>transact(()=>addNode(b.querySelector('span').textContent.toLowerCase().replace(' ','-'),b.querySelector('span').textContent,b.querySelector('i').textContent),`${b.querySelector('span').textContent} added`));document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo()}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo()}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveStatus('Saved just now');notify('Changes saved')}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('.search-box input')?.focus()}if(e.key==='Escape'){closeDrawer();$('.media-modal')?.remove()}});renderInspector('style',false);sync()}
+const heroImage=$('.hero-image');setup();
