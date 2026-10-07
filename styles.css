@@ -34,3 +34,13 @@
 /* Mobile mode owns the editor chrome; never stack the desktop topbar above it. */
 .mobile-builder .topbar{display:none!important}
 .mobile-builder .canvas-stage{height:100%;min-height:0}
+/* Compact topbar navigation: mobile actions live above the canvas, not below it. */
+.mobile-builder .mobile-dock{top:58px;bottom:auto;left:0;right:0;height:48px;padding:3px 8px;border-radius:0;border-left:0;border-right:0;border-top:0;border-bottom:1px solid #393244;background:#111219f5;box-shadow:0 8px 22px #0007;backdrop-filter:blur(18px)}
+.mobile-builder .mobile-dock button{min-height:40px;height:40px;border-radius:8px;flex-direction:row;gap:5px;font-size:9px}
+.mobile-builder .mobile-dock button span{font-size:16px}
+.mobile-builder .canvas-toolbar{margin-top:106px}
+.mobile-builder .stage-scroll{padding-top:14px;padding-bottom:28px}
+.mobile-builder .mobile-sheet{max-height:calc(100% - 108px)}
+.mobile-builder .mobile-sheet[data-mode="full"]{max-height:calc(100% - 108px)}
+.mobile-builder .toast{bottom:18px}
+@media(max-width:390px){.mobile-builder .mobile-dock{padding-left:4px;padding-right:4px}.mobile-builder .mobile-dock button{font-size:8px;gap:3px}.mobile-builder .mobile-dock button span{font-size:14px}}

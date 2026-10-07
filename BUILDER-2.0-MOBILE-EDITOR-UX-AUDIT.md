@@ -10,7 +10,7 @@ The mobile Builder is a touch-first editor surface over the existing `state`, hi
 
 - **Phone UI = canvas-first.** The page canvas remains visible until a task requires a sheet.
 - **Top bar:** Back, current page/selection context, Undo, Redo, Save and save-state feedback.
-- **Bottom navigation:** Blocks, Edit, Theme, Preview, More.
+- **Top navigation:** Blocks, Edit, Theme, Preview, More are integrated into the compact editor topbar so the canvas does not lose bottom space.
 - **Sheets:** compact, medium, tall, and near-full-height variants with handle, sticky header, close action, scrollable body, scrim, safe-area padding, and focus-visible controls.
 - **No desktop sidebars:** mobile mode hides the desktop topbar, left palette, right inspector and desktop bottom utility strip.
 
@@ -86,3 +86,7 @@ The active breakpoint is always shown in the Edit context and can be switched fr
 - Preview uses the prototype canvas rather than a separately rendered published URL.
 - Touch drag-and-drop is represented by explicit movement alternatives in Layers; desktop drag behavior remains unchanged.
 - Browser verification used the available narrow mobile-mode canvas in the sandbox browser; a physical-device test is still recommended before production UI adoption.
+
+## Topbar navigation refinement
+
+The five mobile editor actions now sit in a compact horizontal action row directly below the mobile context header. This preserves the full capability surface while removing the large bottom dock and returning the lower canvas edge to the page preview. Sheets still open as contextual overlays and retain their scroll, scrim, safe-area and close behavior.
