@@ -44,3 +44,27 @@
 .mobile-builder .mobile-sheet[data-mode="full"]{max-height:calc(100% - 108px)}
 .mobile-builder .toast{bottom:18px}
 @media(max-width:390px){.mobile-builder .mobile-dock{padding-left:4px;padding-right:4px}.mobile-builder .mobile-dock button{font-size:8px;gap:3px}.mobile-builder .mobile-dock button span{font-size:14px}}
+/* Desktop shell refinement: persistent creation, large canvas, floating contextual editing. */
+@media(min-width:1001px){
+  .app-shell{--topbar-h:56px;--canvasbar-h:40px;--left-w:244px;--inspector-w:340px}
+  .app-shell .topbar{height:var(--topbar-h);min-height:var(--topbar-h);padding:0 16px;gap:12px}
+  .app-shell .brand-lockup{min-width:210px;gap:8px}.app-shell .brand-mark{width:31px;height:31px;font-size:15px}.app-shell .brand-name{font-size:10px}.app-shell .brand-sub{font-size:7px}
+  .app-shell .top-center{gap:7px}.app-shell .top-actions{gap:5px}.app-shell .top-actions .icon-btn,.app-shell .top-actions .device-top{width:30px;height:30px}.app-shell .preview-btn,.app-shell .publish-btn{height:32px;font-size:10px;padding:0 11px}.app-shell .avatar{width:30px;height:30px;font-size:9px}
+  .app-shell .workspace{position:relative;display:grid;grid-template-columns:var(--left-w) minmax(0,1fr);grid-template-rows:minmax(0,1fr);overflow:hidden}
+  .app-shell .left-panel{grid-column:1;grid-row:1;display:flex;width:var(--left-w);min-width:var(--left-w);border-right:1px solid #292632;overflow:hidden}
+  .app-shell .canvas-stage{grid-column:2;grid-row:1;min-width:0;position:relative;height:100%;overflow:hidden}
+  .app-shell .canvas-toolbar{height:var(--canvasbar-h);min-height:var(--canvasbar-h);padding:0 14px;border-bottom:1px solid #2b2932}
+  .app-shell .stage-scroll{height:calc(100% - var(--canvasbar-h) - 38px);min-height:0;padding:24px 28px 30px;overflow:auto}
+  .app-shell .bottom-bar{height:38px;min-height:38px;padding:0 12px;border-top:1px solid #292632}
+  .app-shell .inspector{position:absolute;z-index:80;top:12px;right:14px;bottom:50px;width:var(--inspector-w);min-width:300px;max-width:420px;display:flex;flex-direction:column;border:1px solid #453653;border-radius:12px;background:#171820f5;box-shadow:0 18px 55px #000b;backdrop-filter:blur(10px);overflow:hidden;transition:opacity .18s ease,transform .18s ease,visibility .18s ease}
+  .app-shell .inspector-head{flex:none}.app-shell .inspector-tabs{flex:none}.app-shell .inspector-scroll{min-height:0;flex:1;overflow:auto}.app-shell .inspector-footer{flex:none}
+  .app-shell.inspector-hidden .inspector{opacity:0;visibility:hidden;pointer-events:none;transform:translateX(18px)}
+  .inspector-toggle{height:30px;display:flex;align-items:center;gap:5px;padding:0 9px;border:1px solid #34303e;border-radius:7px;background:#1b1c23;color:#aaa2b1;font:600 9px var(--head);white-space:nowrap}
+  .inspector-toggle:hover,.inspector-toggle.active{border-color:#7956a4;background:#2a2040;color:#f0e7ff}.inspector-toggle:first-letter{font-size:15px}
+  .app-shell.inspector-hidden .canvas-stage{width:100%}
+}
+@media(min-width:1001px) and (max-width:1250px){.app-shell{--left-w:230px;--inspector-w:320px}.app-shell .brand-lockup{min-width:175px}.inspector-toggle span{display:none}}
+@media(max-width:1000px){.inspector-toggle{display:none!important}}
+/* Responsive safety: mobile stays on its touch-first sheets, never the desktop floating Inspector. */
+.mobile-builder .inspector{display:none!important}
+.mobile-builder .inspector-toggle{display:none!important}
